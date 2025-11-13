@@ -1,0 +1,18 @@
+<div>
+  <h3>Platobné metódy</h3>
+  <button onclick="addMoney(5)">€5</button>
+  <button onclick="addMoney(10)">€10</button>
+  <button onclick="addMoney(20)">€20</button>
+</div>
+
+<script>
+let balance = 15; // vstupný bonus
+function addMoney(amount) {
+    balance += amount;
+    alert(`Tvoj stav je teraz €${balance}`);
+    // tu môžeš aktualizovať aj HTML element s balansom
+    document.getElementById('balance').innerText = `Stav: €${balance}`;
+}
+</script>
+
+<p id="balance">Stav: €15</p>
