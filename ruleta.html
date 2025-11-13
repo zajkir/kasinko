@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Golden Ace Casino — Blackjack & Ruleta</title>
+<style>
+  :root{
+    --bg-1:#03050a;
+    --bg-2:#051428;
+    --panel:#0c1220;
+    --gold:#ffd700;
+    --muted:#9aa3b2;
+    --accent:#32cd32;
+    --danger:#e04b4b;
+    --neon-green: #34ffb7;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; -webkit-font-smoothing:antialiased;}
+  body{
+    background: radial-gradient(800px 300px at 10% 10%, rgba(255,215,0,0.02), transparent),
+                radial-gradient(800px 300px at 90% 90%, rgba(52,255,183,0.02), transparent),
+                linear-gradient(180deg,var(--bg-1),var(--bg-2));
+    color:#e6eef8;
+    display:flex;align-items:center;justify-content:center;padding:30px;
+    overflow:hidden;
+  }
+
+  /* neon animated background lines (luxury vibe) */
+  .neon-bg {
+    position:fixed; inset:0; z-index:-3; pointer-events:none;
+    background:
+      linear-gradient(90deg, rgba(255,215,0,0.01), transparent 30%),
+      linear-gradient(180deg, rgba(0,0,0,0.2), transparent 30%);
+    animation: neonSlow 8s ease-in-out infinite alternate;
+    filter:blur(12px) saturate(1.1);
+  }
+  @keyframes neonSlow {
+    0% { transform: translateY(0) rotate(0deg) scale(1); opacity:0.9 }
+    50% { transform: translateY(-6px) rotate(0.6deg) scale(1.01); opacity:1 }
+    100%{ transform: translateY(0) rotate(-0.6deg) scale(1); opacity:0.9 }
+  }
+
+  /* subtle shimmering lines */
+  .neon-line {
+    position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg, transparent, rgba(255,215,0,0.06), transparent);
+    top:20%; box-shadow:0 0 40px rgba(255,215,0,0.02) inset;
+    animation: shimmer 6s linear infinite;
+    opacity:0.9;
+  }
+  .neon-line.l2{ top:60%; background:linear-gradient(90deg, transparent, rgba(52,255,183,0.04), transparent); }
+  @keyframes shimmer { 0%{transform:translateX(-40%)} 100%{transform:translateX(40%)} }
+
+  /* shell */
+  .shell{width:100%;max-width:1200px;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 30px 80px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.02);position:relative}
+
+  .hero{padding:20px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;background:linear-gradient(180deg, rgba(255,215,0,0.02), transparent)}
+  .brand{display:flex;gap:14px;align-items:center}
+  .logo{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#0b1320,#172033);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--gold);box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+  h1{margin:0;font-family:Georgia, serif;color:var(--gold);font-size:20px}
+  .meta{color:var(--muted);font-size:13px}
+  .hero-right{display:flex;align-items:center;gap:12px}
+  .balance{background:linear-gradient(90deg, rgba(50,205,50,0.06), transparent);padding:8px 12px;border-radius:10px;color:var(--accent);font-weight:700}
+  .bonus{background:linear-gradient(90deg, rgba(255,215,0,0.06), transparent);padding:8px 12px;border-radius:10px;color:var(--gold);font-weight:700}
+
+  .main{display:grid;grid-template-columns:1fr 360px;gap:18px;padding:18px}
+  .lobby, .side{background:var(--panel);border-radius:12px;padding:16px}
+  .menu{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .menu button{background:transparent;border:1px solid rgba(255,255,255,0.03);padding:10px 12px;border-radius:8px;color:var(--muted);cursor:pointer}
+  .menu button.active{border-color:rgba(255,215,0,0.12);color:var(--gold);box-shadow:0 6px 18px rgba(255,215,0,0.03)}
+
+  .canvas{background:linear-gradient(180deg,#071021,#04101a);border-radius:10px;padding:18px;min-height:520px;position:relative;overflow:hidden}
+  .cards{display:flex;gap:8px;flex-wrap:wrap}
+  .card{width:56px;height:80px;border-radius:8px;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 8px 18px rgba(0,0,0,0.5);transform-origin:center}
+  .card.back{background:linear-gradient(135deg,#0b2a56,#03243b);color:#fff}
+  .info{color:var(--muted);margin-bottom:8px}
+
+  button{cursor:pointer;border:0;padding:10px 14px;border-radius:8px;font-weight:700}
+  .btn-primary{background:#1e40af;color:white}
+  .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+  .btn-hit{background:#059669;color:white}
+  .btn-stand{background:#dc2626;color:white}
+  .btn-split{background:#ff8c00;color:white}
+
+  .hidden{display:none}
+  .small{font-size:13px;color:var(--muted)}
+  .center{display:flex;align-items:center;gap:8px}
+  .stats{font-size:13px;color:var(--muted);margin-top:10px}
+  .controls form{display:flex;flex-direction:column;gap:8px}
+  input[type=number], input[type=text], select{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:#07101a;color:#fff}
+
+  .hand-box{border-radius:8px;padding:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);margin-bottom:8px}
+  .active{outline:2px solid rgba(255,215,0,0.12)}
+
+  /* roulette visuals */
+  .roulette-area{display:flex;gap:18px;align-items:flex-start}
+  .wheel-viewport{width:420px;display:flex;align-items:center;justify-content:center;position:relative}
+  .wheel-canvas{
+    width:360px;height:360px;border-radius:50%;background:linear-gradient(180deg,#0b0f14,#06121a);box-shadow:0 12px 40px rgba(0,0,0,0.6);position:relative;overflow:visible;border:6px solid #0a0f13;
+    display:grid;place-items:center;
+  }
+  .wheel-center{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.02), transparent), linear-gradient(180deg,#07101a,#041017);display:grid;place-items:center;color:var(--muted);font-weight:700;z-index:30}
+  .wheel-pointer{position:absolute;top:2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:22px solid var(--danger);z-index:50}
+
+  /* ball animation - small white ball */
+  .ball { width:12px;height:12px;border-radius:50%;background:#fff;position:absolute;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,0.6) }
+
+  /* wheel sectors - rendered by canvas (JS) but we style a rim */
+  .wheel-rim { position:absolute; inset:0;border-radius:50%;pointer-events:none;box-shadow:inset 0 6px 18px rgba(0,0,0,0.6) }
+
+  /* confetti */
+  .confetti{position:absolute;inset:0;pointer-events:none;z-index:120}
+
+  /* responsive */
+  @media (max-width:1100px){ .main{grid-template-columns:1fr 320px} .wheel-viewport{display:none} }
+  @media (max-width:700px){ .main{grid-template-columns:1fr} .hero{flex-direction:column;align-items:flex-start} }
+
+</style>
+</head>
+<body>
+  <div class="neon-bg"></div>
+  <div class="neon-line"></div>
+  <div class="neon-line l2"></div>
+
+  <div class="shell" id="app">
+    <div class="hero">
+      <div class="brand">
+        <div class="logo">GA</div>
+        <div>
+          <h1>🎰 Golden Ace Casino</h1>
+          <div class="meta">Blackjack a Ruleta — Dealer: Marco 🎩</div>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="bonus" id="bonus-badge">Bonus pri vstupe: €15</div>
+        <div class="balance" id="top-balance">💰 €100</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="lobby">
+        <div class="menu" id="game-menu">
+          <button class="active" data-game="lobby">Lobby</button>
+          <button data-game="blackjack">Blackjack</button>
+          <button data-game="roulette">Ruleta</button>
+        </div>
+
+        <div class="canvas" id="canvas">
+          <!-- Lobby -->
+          <div id="lobby-screen">
+            <h2 style="margin-top:0;color:var(--gold)">Vitaj!</h2>
+            <p class="meta">Zaregistruj sa vpravo a získaj vstupný bonus €15. Vyber hru z menu.</p>
+            <div style="display:flex;gap:12px;margin-top:14px;align-items:center">
+              <button id="to-blackjack" class="btn-primary">Hrať Blackjack</button>
+              <button id="to-roulette" class="btn-ghost">Skočiť na Ruletu</button>
+            </div>
+          </div>
+
+          <!-- Blackjack (kept simple, as requested) -->
+          <div id="blackjack-screen" class="hidden">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="flex:1">
+                <div style="color:var(--muted);margin-bottom:8px">Dealer</div>
+                <div id="dealer-cards" class="cards"></div>
+                <div id="dealer-total" class="small" style="margin-top:6px;color:var(--muted)"></div>
+
+                <div style="margin-top:22px;color:var(--muted);margin-bottom:8px">Your Hands</div>
+                <div id="hands-container"></div>
+
+                <div id="game-info" class="small" style="margin-top:12px;color:var(--muted)"></div>
+              </div>
+
+              <aside style="width:300px">
+                <div style="background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:12px;border-radius:8px">
+                  <label class="small" style="color:var(--muted)">Bet (€)</label>
+                  <input id="bet" type="number" min="1" value="10" />
+
+                  <div style="display:flex;gap:8px;margin-top:12px">
+                    <button id="start" class="btn-primary">Start</button>
+                    <button id="hit" class="btn-hit" disabled>Hit</button>
+                    <button id="stand" class="btn-stand" disabled>Stand</button>
+                    <button id="split" class="btn-split" disabled>Split</button>
+                  </div>
+
+                  <div style="margin-top:12px;color:var(--muted)" id="detailed-stats">Win rate: 0%</div>
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          <!-- Roulette -->
+          <div id="roulette-screen" class="hidden">
+            <div class="roulette-area">
+              <div class="wheel-viewport">
+                <div class="wheel-pointer"></div>
+                <div class="wheel-canvas" id="wheel-canvas">
+                  <!-- wheel sectors drawn by canvas inside JS -->
+                  <canvas id="wheel" width="360" height="360" style="border-radius:50%"></canvas>
+                  <div class="wheel-center" id="wheel-center">RU</div>
+                </div>
+              </div>
+
+              <div style="flex:1;">
+                <div style="margin-bottom:10px;color:var(--muted)">Stávky — vyber typ a zadaj sumu</div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                  <select id="bet-type">
+                    <option value="number">Číslo (0–36) — 35:1</option>
+                    <option value="red">Červená — 1:1</option>
+                    <option value="black">Čierna — 1:1</option>
+                    <option value="even">Párne — 1:1</option>
+                    <option value="odd">Nepárne — 1:1</option>
+                    <option value="low">1–18 — 1:1</option>
+                    <option value="high">19–36 — 1:1</option>
+                    <option value="dozen1">1–12 — 2:1</option>
+                    <option value="dozen2">13–24 — 2:1</option>
+                    <option value="dozen3">25–36 — 2:1</option>
+                  </select>
+                  <input id="bet-number" type="number" placeholder="číslo (0-36)" min="0" max="36" />
+                </div>
+
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                  <input id="roulette-bet" type="number" min="1" value="5" style="width:150px" />
+                  <button id="spin" class="btn-primary">Točiť</button>
+                  <button id="clear-bet" class="btn-ghost">Vymazať</button>
+                </div>
+
+                <div id="roulette-log" class="small" style="color:var(--muted);margin-bottom:8px">Last: -</div>
+                <div id="roulette-result" style="font-weight:700;color:var(--gold)"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="side">
+        <div style="color:var(--muted);font-size:13px;margin-bottom:8px">Registrácia</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <input id="reg-name" placeholder="Meno" type="text" />
+          <input id="reg-age" placeholder="Vek" type="number" min="1" />
+          <button id="reg-button" class="btn-primary">Zaregistrovať a zobrať bonus €15</button>
+          <div id="reg-message" class="small" style="color:var(--muted)"></div>
+        </div>
+
+        <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.02)" />
+        <div style="color:var(--muted);font-size:13px;margin-bottom:8px">Rýchle štatistiky</div>
+        <div id="global-stats" class="small" style="color:var(--muted)">Games played: 0</div>
+      </div>
+    </div>
+
+    <div style="height:86px;background:linear-gradient(90deg,#040612,#071227);display:flex;align-items:center;justify-content:center">
+      <div style="color:var(--muted)">Hrajte zodpovedne, len od 18 rokov. Uži si hru!</div>
+    </div>
+  </div>
+
+  <div class="confetti" id="confetti"></div>
+
+<script>
+/* -----------------------
+   Utilities & State
+   ----------------------- */
+const synth = window.speechSynthesis;
+function speak(text){ if(!synth) return; try{ const u=new SpeechSynthesisUtterance(text); u.lang='en-US'; synth.cancel(); synth.speak(u);}catch(e){} }
+
+function randCard(){ const c=['2','3','4','5','6','7','8','9','10','J','Q','K','A']; return c[Math.floor(Math.random()*c.length)]; }
+function cardValue(c){ if(c==='A') return 11; if(['J','Q','K'].includes(c)) return 10; return parseInt(c,10); }
+function handValue(hand){ let v=hand.reduce((s,c)=>s+cardValue(c),0); let aces=hand.filter(x=>x==='A').length; while(v>21 && aces>0){v-=10;aces--} return v; }
+function isBlackjack(hand){ return hand.length===2 && handValue(hand)===21; }
+
+let appState = { balance:100, bonusGiven:false, globalGames:0 };
+
+/* DOM refs */
+const topBalance = document.getElementById('top-balance');
+const bonusBadge = document.getElementById('bonus-badge');
+const globalStats = document.getElementById('global-stats');
+
+/* update top UI */
+function updateTop(){ topBalance.textContent = `💰 €${appState.balance}`; globalStats.textContent = `Games played: ${appState.globalGames}`; }
+updateTop();
+
+/* -----------------------
+   Menu & Navigation
+   ----------------------- */
+const menuButtons = document.querySelectorAll('#game-menu button');
+const screens = {
+  lobby: document.getElementById('lobby-screen'),
+  blackjack: document.getElementById('blackjack-screen'),
+  roulette: document.getElementById('roulette-screen')
+};
+function setActiveGame(name){
+  menuButtons.forEach(b=>b.classList.toggle('active', b.dataset.game===name));
+  Object.values(screens).forEach(s=>s.classList.add('hidden'));
+  if(name==='lobby') screens.lobby.classList.remove('hidden');
+  if(name==='blackjack') screens.blackjack.classList.remove('hidden');
+  if(name==='roulette') screens.roulette.classList.remove('hidden');
+}
+menuButtons.forEach(b=>b.addEventListener('click', ()=> setActiveGame(b.dataset.game)));
+document.getElementById('to-blackjack').addEventListener('click', ()=> setActiveGame('blackjack'));
+document.getElementById('to-roulette').addEventListener('click', ()=> setActiveGame('roulette'));
+
+/* -----------------------
+   Registration + Bonus
+   ----------------------- */
+const regBtn = document.getElementById('reg-button');
+const regName = document.getElementById('reg-name');
+const regAge = document.getElementById('reg-age');
+const regMsg = document.getElementById('reg-message');
+regBtn.addEventListener('click', ()=>{
+  const name = (regName.value||'').trim();
+  const age = Number(regAge.value||0);
+  if(!name){ regMsg.textContent = 'Zadaj meno.'; return; }
+  if(!age || age < 18){ regMsg.textContent = 'Musíš mať aspoň 18 rokov.'; return; }
+  if(!appState.bonusGiven){
+    appState.balance += 15;
+    appState.bonusGiven = true;
+    regMsg.textContent = `Vitaj ${name}! Bonus €15 bol pridaný.`;
+    bonusBadge.textContent = 'Bonus: €15 applied';
+    speak('Welcome! Bonus fifteen euros added.');
+  } else {
+    regMsg.textContent = 'Bonus už bol použitý.';
+  }
+  updateTop();
+});
+
+/* -----------------------
+   Confetti helper
+   ----------------------- */
+function burstConfetti(){
+  const cont = document.getElementById('confetti');
+  for(let i=0;i<36;i++){
+    const s = document.createElement('div');
+    s.style.position='absolute';
+    s.style.left = (10 + Math.random()*80) + '%';
+    s.style.top = '-10vh';
+    s.style.width = (6+Math.random()*8)+'px';
+    s.style.height = (10+Math.random()*12)+'px';
+    s.style.background = ['#ffd700','#ff6b6b','#7ee8fa','#32cd32'][Math.floor(Math.random()*4)];
+    s.style.borderRadius = '3px';
+    s.style.opacity = '0.95';
+    s.style.transform = `rotate(${Math.random()*360}deg)`;
+    s.style.transition = 'transform 2.6s linear, top 2.6s linear, opacity 2.6s linear';
+    cont.appendChild(s);
+    setTimeout(()=>{ s.style.top = (80 + Math.random()*30) + 'vh'; s.style.transform = `rotate(${Math.random()*720}deg)`; s.style.opacity='0'; }, 20);
+    setTimeout(()=>s.remove(),2800);
+  }
+}
+
+/* -----------------------
+   Blackjack (kept as before)
+   ----------------------- */
+(function(){
+  const dealerCardsEl = document.getElementById('dealer-cards');
+  const dealerTotalEl = document.getElementById('dealer-total');
+  const handsContainer = document.getElementById('hands-container');
+  const gameInfo = document.getElementById('game-info');
+  const detailedStats = document.getElementById('detailed-stats');
+
+  const startBtn = document.getElementById('start');
+  const hitBtn = document.getElementById('hit');
+  const standBtn = document.getElementById('stand');
+  const splitBtn = document.getElementById('split');
+  const betInput = document.getElementById('bet');
+
+  let state = {
+    hands: [],
+    dealer: [],
+    currentHandIndex: 0,
+    stats: { games:0, wins:0, losses:0, draws:0 }
+  };
+
+  function updateUI(showDealer=false){
+    // dealer
+    dealerCardsEl.innerHTML='';
+    const dealerToShow = showDealer? state.dealer : (state.dealer.length? [state.dealer[0],'?'] : []);
+    dealerToShow.forEach(c=>{
+      const d = document.createElement('div'); d.className='card ' + ((c==='?')? 'back':''); d.textContent = c==='?'? '' : c; dealerCardsEl.appendChild(d);
+    });
+    dealerTotalEl.textContent = showDealer? `Total: ${handValue(state.dealer)}` : '';
+
+    // hands
+    handsContainer.innerHTML='';
+    state.hands.forEach((h,idx)=>{
+      const box = document.createElement('div'); box.className='hand-box' + (idx===state.currentHandIndex? ' active':'');
+      const title = document.createElement('div'); title.className='small'; title.textContent = `Hand ${idx+1} — bet €${h.bet}`;
+      const cw = document.createElement('div'); cw.className='cards';
+      h.cards.forEach(c=>{ const cd=document.createElement('div'); cd.className='card'; cd.textContent=c; cw.appendChild(cd); });
+      const tot = document.createElement('div'); tot.className='small'; tot.textContent = `Total: ${handValue(h.cards)}`;
+      box.appendChild(title); box.appendChild(cw); box.appendChild(tot);
+      handsContainer.appendChild(box);
+    });
+
+    detailedStats.textContent = `Win rate: ${state.stats.games? ((state.stats.wins/state.stats.games)*100).toFixed(1) : 0}%`;
+    updateTop();
+  }
+
+  function canSplit(){
+    if(state.hands.length!==1) return false;
+    const h = state.hands[0]; if(h.cards.length!==2) return false;
+    return h.cards[0]===h.cards[1] || cardValue(h.cards[0])===cardValue(h.cards[1]);
+  }
+
+  startBtn.addEventListener('click', ()=>{
+    const bet = Math.max(1, Math.floor(Number(betInput.value)||0));
+    if(bet<=0){ alert('Enter a valid bet'); return; }
+    if(bet>appState.balance){ alert('Not enough balance'); return; }
+
+    appState.balance -= bet;
+    state.hands = [{cards:[randCard(), randCard()], bet:bet}];
+    state.dealer = [randCard(), randCard()];
+    state.currentHandIndex = 0;
+
+    startBtn.disabled = true; hitBtn.disabled = false; standBtn.disabled = false; splitBtn.disabled = !canSplit();
+    betInput.disabled = true;
+
+    updateUI(false);
+    gameInfo.textContent = 'Your turn. Click Hit, Stand or Split if available.';
+    speak('Cards dealt. Your move.');
+
+    const playerBJ = isBlackjack(state.hands[0].cards);
+    const dealerBJ = isBlackjack(state.dealer);
+    if(playerBJ || dealerBJ){
+      hitBtn.disabled = true; standBtn.disabled = true; splitBtn.disabled = true;
+      dealerPlay(true);
+    }
+  });
+
+  splitBtn.addEventListener('click', ()=>{
+    if(!canSplit()) return;
+    const h = state.hands[0], bet = h.bet;
+    if(appState.balance < bet){ alert('Not enough balance to split'); return; }
+    appState.balance -= bet;
+    const a = {cards:[h.cards[0], randCard()], bet:bet};
+    const b = {cards:[h.cards[1], randCard()], bet:bet};
+    state.hands = [a,b]; state.currentHandIndex = 0;
+    splitBtn.disabled = true; updateUI(false); speak('You split your cards. Play first hand.');
+    updateTop();
+  });
+
+  hitBtn.addEventListener('click', ()=>{
+    const h = state.hands[state.currentHandIndex]; h.cards.push(randCard()); updateUI(false);
+    const v = handValue(h.cards);
+    if(v>21){ gameInfo.textContent = `Hand ${state.currentHandIndex+1} busted.`; speak('You busted on this hand.'); nextHandOrDealer(); }
+    else if(v===21){ gameInfo.textContent = `Hand ${state.currentHandIndex+1} has 21.`; nextHandOrDealer(); }
+  });
+
+  standBtn.addEventListener('click', ()=>{ gameInfo.textContent = `Hand ${state.currentHandIndex+1} stands.`; nextHandOrDealer(); });
+
+  function nextHandOrDealer(){
+    if(state.currentHandIndex+1 < state.hands.length){ state.currentHandIndex++; updateUI(false); splitBtn.disabled=true; }
+    else { hitBtn.disabled=true; standBtn.disabled=true; splitBtn.disabled=true; dealerPlay(); }
+  }
+
+  function dealerPlay(immediate=false){
+    if(!immediate){
+      while(handValue(state.dealer) < 17){ state.dealer.push(randCard()); }
+    }
+    updateUI(true);
+    state.stats.games += 1;
+    appState.globalGames += 1;
+    const messages = [];
+    state.hands.forEach((h,idx)=>{
+      const pval = handValue(h.cards); const dval = handValue(state.dealer); const bet = h.bet;
+      if(pval>21){ state.stats.losses += 1; messages.push(`Hand ${idx+1} busted.`); }
+      else if(isBlackjack(h.cards) && !isBlackjack(state.dealer)){
+        const payout = Math.round(bet*2.5); appState.balance += payout; state.stats.wins += 1; messages.push(`Hand ${idx+1} BLACKJACK!`); }
+      else if(isBlackjack(h.cards) && isBlackjack(state.dealer)){
+        appState.balance += bet; state.stats.draws += 1; messages.push(`Hand ${idx+1} push.`); }
+      else {
+        if(dval>21 || pval > dval){ appState.balance += bet*2; state.stats.wins += 1; messages.push(`Hand ${idx+1} wins.`); }
+        else if(pval === dval){ appState.balance += bet; state.stats.draws += 1; messages.push(`Hand ${idx+1} draw.`); }
+        else { state.stats.losses += 1; messages.push(`Hand ${idx+1} loses.`); }
+      }
+    });
+
+    document.getElementById('game-info').textContent = messages.join(' | ');
+    speak('Round finished. ' + messages.join(' '));
+    startBtn.disabled = false; betInput.disabled = false;
+    updateTop();
+    if(messages.some(m=>/BLACKJACK|wins/.test(m))){ burstConfetti(); }
+    if(appState.balance < 1){ startBtn.disabled = true; document.getElementById('game-info').textContent += ' You are out of money.'; speak('You are out of money. Thank you for playing.'); }
+  }
+
+  updateUI(false);
+})();
+
+/* -----------------------
+   Roulette: realistic wheel + ball + bets
+   ----------------------- */
+(function(){
+  const canvas = document.getElementById('wheel');
+  const ctx = canvas.getContext('2d');
+  const spinBtn = document.getElementById('spin');
+  const clearBtn = document.getElementById('clear-bet');
+  const betInput = document.getElementById('roulette-bet');
+  const betType = document.getElementById('bet-type');
+  const betNumber = document.getElementById('bet-number');
+  const log = document.getElementById('roulette-log');
+  const resultEl = document.getElementById('roulette-result');
+
+  // Classic European wheel sequence (single zero) — clockwise order
+  // Using standard order: 0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26
+  const sectors = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+  const redsSet = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+
+  const sectorCount = sectors.length;
+  const degPer = 360 / sectorCount;
+
+  // initial wheel state
+  let wheelAngle = 0; // degrees
+  let wheelVelocity = 0;
+  let isSpinning = false;
+  let ballAngle = 0; // degrees around rim (opposite direction)
+  let ballRadius = 160; // px from center (adjusts during spin)
+  let ballVelocity = 0;
+  let spinStartTime = null;
+
+  // draw wheel
+  function drawWheel(){
+    const cx = canvas.width/2, cy = canvas.height/2, r = 170;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // outer rim
+    ctx.save();
+    ctx.translate(cx,cy);
+    // wheel base
+    ctx.beginPath();
+    ctx.arc(0,0,r,0,Math.PI*2);
+    ctx.fillStyle = '#0b0f14';
+    ctx.fill();
+
+    // draw sectors
+    for(let i=0;i<sectorCount;i++){
+      const start = (i * (2*Math.PI/sectorCount)) + (wheelAngle * Math.PI/180);
+      const end = ((i+1) * (2*Math.PI/sectorCount)) + (wheelAngle * Math.PI/180);
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.arc(0,0,r-18,start,end);
+      ctx.closePath();
+      const num = sectors[i];
+      // color
+      let color = '#111';
+      if(num === 0) color = '#0f8'; // green for zero
+      else color = redsSet.has(num) ? '#b22222' : '#111111';
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      // label
+      const mid = (start + end) / 2;
+      ctx.save();
+      ctx.rotate(mid);
+      ctx.translate(r-60,0);
+      ctx.rotate(Math.PI/2);
+      ctx.fillStyle = (num===0 ? '#001' : '#fff');
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(num.toString(), 0, 0);
+      ctx.restore();
+    }
+
+    // center markings
+    ctx.beginPath();
+    ctx.arc(0,0,68,0,Math.PI*2);
+    ctx.fillStyle = '#061018';
+    ctx.fill();
+
+    // decorative inner ring
+    ctx.beginPath();
+    ctx.arc(0,0,r-12,0,Math.PI*2);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#0b1b2a';
+    ctx.stroke();
+
+    ctx.restore();
+
+    // draw pointer top (visual only handled in CSS)
+  }
+
+  // ball drawing
+  function drawBall(){
+    const cx = canvas.width/2, cy = canvas.height/2;
+    // ball position (angle opposite wheelAngle direction + ballAngle offset)
+    const angle = (ballAngle + wheelAngle) * Math.PI/180 * -1; // invert so ball runs opposite
+    const radius = ballRadius;
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle) * radius;
+    // ball
+    ctx.beginPath();
+    ctx.fillStyle = '#fff';
+    ctx.arc(x,y,8,0,Math.PI*2);
+    ctx.fill();
+    // small shadow
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.arc(x,y+10,5,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  // render frame
+  function render(){
+    drawWheel();
+    drawBall();
+  }
+
+  render();
+
+  // spin logic: we spin the wheel with a velocity and spin the ball in opposite direction,
+  // gradually the ball slows and falls into a sector (we calculate final sector when velocities near zero)
+  function spinOnce(bet){
+    if(isSpinning) return;
+    isSpinning = true;
+    resultEl.textContent = '';
+    log.textContent = 'Spinning...';
+    const stake = Math.max(1, Math.floor(Number(betInput.value)||0));
+    if(stake <= 0){ alert('Zadaj platnú stávku'); isSpinning=false; return; }
+    if(stake > appState.balance){ alert('Nedostatok prostriedkov'); isSpinning=false; return; }
+    // bet validation for number choice
+    const type = betType.value;
+    const chosen = betNumber.value ? Number(betNumber.value) : null;
+    if(type==='number' && (chosen === null || isNaN(chosen) || chosen<0 || chosen>36)){ alert('Zadaj číslo 0-36'); isSpinning=false; return; }
+
+    // take stake from balance now
+    appState.balance -= stake;
+    updateTop();
+
+    // initial velocities (deg/s)
+    wheelVelocity = 550 + Math.random()*300; // wheel spins clockwise
+    ballVelocity = 900 + Math.random()*400; // ball spins counter-clockwise faster
+    ballRadius = 150 + Math.random()*8; // rim radius
+    spinStartTime = performance.now();
+
+    // duration & friction
+    const totalDuration = 4200 + Math.random()*1800; // ms
+    const start = performance.now();
+
+    // animation loop
+    function step(now){
+      const elapsed = now - start;
+      const t = Math.min(1, elapsed / totalDuration);
+
+      // easing for deceleration
+      // wheel slows gradually
+      const wheelDecel = 1 - easeOutCubic(t);
+      const ballDecel = 1 - easeOutCubic(Math.min(1, (elapsed / (totalDuration*0.9))));
+
+      const currentWheelVel = wheelVelocity * wheelDecel;
+      const currentBallVel = ballVelocity * ballDecel;
+
+      // integrate angles
+      wheelAngle = (wheelAngle + (currentWheelVel * (16/1000))) % 360;
+      ballAngle = (ballAngle + (currentBallVel * (16/1000))) % 360;
+
+      // ball slowly moves inward as it loses speed
+      ballRadius = 150 - (t * 60); // moves from rim inward
+
+      render();
+
+      if(elapsed < totalDuration){
+        requestAnimationFrame(step);
+      } else {
+        // finalize: compute landing sector by mapping final wheelAngle and ballAngle
+        // The ball relative to wheel: compute absolute angle where ball stops relative to wheel sectors
+        const finalBallAbsDeg = (ballAngle + wheelAngle) % 360;
+        // determine sector index: convert angle to sector index (wheel sectors rotated by wheelAngle)
+        // sector 0 start angle at -degPer/2 etc. We pick a mapping consistent with drawing.
+        // We'll compute index by dividing 360 into slices and mapping to sectors array assuming sector 0 at angle 0
+        // Convert angle to 0..360, then compute index
+        const deg = (360 - (finalBallAbsDeg % 360) + (degPer/2)) % 360; // align with number label rotation
+        let index = Math.floor(deg / degPer) % sectorCount;
+        // ensure valid
+        index = (index + sectorCount) % sectorCount;
+        const outcome = sectors[index];
+
+        // evaluate bet
+        evaluateRouletteOutcome({ stake, type, chosen, outcome });
+
+        // reset spinning flag after short delay
+        setTimeout(()=>{ isSpinning=false; }, 300);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function evaluateRouletteOutcome({stake, type, chosen, outcome}){
+    let win=false, payout=0, text='';
+    // payouts: number 35:1 (so you receive stake*(35+1) if you win) but here we treat payout as total returned
+    if(type === 'number'){
+      if(outcome === chosen){ win = true; payout = stake * 36; text = `Number ${outcome} hit! You win ${payout}€.`; }
+    } else if(type === 'red'){
+      if(outcome !== 0 && redsSet.has(outcome)){ win=true; payout = stake * 2; text = `Red hit (${outcome}). You win ${payout}€.`; }
+    } else if(type === 'black'){
+      if(outcome !== 0 && !redsSet.has(outcome)){ win=true; payout = stake * 2; text = `Black hit (${outcome}). You win ${payout}€.`; }
+    } else if(type === 'even'){
+      if(outcome !== 0 && outcome % 2 === 0){ win=true; payout = stake * 2; text = `Even hit (${outcome}). You win ${payout}€.`; }
+    } else if(type === 'odd'){
+      if(outcome % 2 === 1){ win=true; payout = stake * 2; text = `Odd hit (${outcome}). You win ${payout}€.`; }
+    } else if(type === 'low'){
+      if(outcome >=1 && outcome <=18){ win=true; payout = stake * 2; text = `1–18 hit (${outcome}). You win ${payout}€.`; }
+    } else if(type === 'high'){
+      if(outcome >=19 && outcome <=36){ win=true; payout = stake * 2; text = `19–36 hit (${outcome}). You win ${payout}€.`; }
+    } else if(type === 'dozen1'){
+      if(outcome >=1 && outcome <=12){ win=true; payout = stake * 3; text = `1–12 hit (${outcome}). You win ${payout}€.`; }
+    } else if(type === 'dozen2'){
+      if(outcome >=13 && outcome <=24){ win=true; payout = stake * 3; text = `13–24 hit (${outcome}). You win ${payout}€.`; }
+    } else if(type === 'dozen3'){
+      if(outcome >=25 && outcome <=36){ win=true; payout = stake * 3; text = `25–36 hit (${outcome}). You win ${payout}€.`; }
+    }
+
+    if(win){
+      appState.balance += payout;
+      resultEl.textContent = `🎉 ${text}`;
+      burstConfetti();
+      speak('Roulette win');
+    } else {
+      resultEl.textContent = `❌ Outcome: ${outcome}. You lost ${stake}€.`;
+    }
+    log.textContent = `Outcome: ${outcome}`;
+    updateTop();
+    appState.globalGames++;
+  }
+
+  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+  // wire UI
+  spinBtn.addEventListener('click', ()=> spinOnce());
+  clearBtn.addEventListener('click', ()=>{
+    document.getElementById('bet-number').value='';
+    document.getElementById('bet-type').value='number';
+    document.getElementById('roulette-bet').value='5';
+    log.textContent='';
+    resultEl.textContent='';
+  });
+
+  // initial wheel paint
+  drawWheel();
+
+  // resize handling - keep canvas crisp
+  function resizeCanvas(){
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = 360 * dpr;
+    canvas.height = 360 * dpr;
+    canvas.style.width = '360px';
+    canvas.style.height = '360px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    drawWheel();
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+})();
+
+/* init default */
+setActiveGame('lobby');
+updateTop();
+
+
+</script>
+</body>
+</html>
